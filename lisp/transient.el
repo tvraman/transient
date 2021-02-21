@@ -1638,8 +1638,6 @@ be nil and PARAMS may be (but usually is not) used to set e.g. the
 This function is also called internally in which case LAYOUT and
 EDIT may be non-nil."
   (transient--debug 'setup)
-  (when (> (minibuffer-depth) 0)
-    (user-error "Cannot invoke transient %s while minibuffer is active" name))
   (transient--with-emergency-exit
     (cond
      ((not name)
@@ -1648,7 +1646,7 @@ EDIT may be non-nil."
       (transient--pop-keymap 'transient--redisplay-map)
       (setq name (oref transient--prefix command))
       (setq params (list :scope (oref transient--prefix scope))))
-     (transient--transient-map
+     (transient--prefix
       ;; Invoked as a ":transient-non-suffix 'transient--do-{stay,call}"
       ;; of an outer prefix.  Unlike the usual `transient--do-replace',
       ;; these predicates fail to clean up after the outer prefix.
@@ -1853,8 +1851,8 @@ value.  Otherwise return CHILDREN as is."
 (defun transient--pre-command ()
   (transient--debug 'pre-command)
   (cond
-   ((memq this-command '(transient-update transient-quit-seq))
-    (transient--pop-keymap 'transient--redisplay-map))
+   ;; ((memq this-command '(transient-update transient-quit-seq))
+   ;;  )
    ((and transient--helpp
          (not (memq this-command '(transient-quit-one
                                    transient-quit-all))))
@@ -1996,17 +1994,20 @@ value.  Otherwise return CHILDREN as is."
         (setq transient-current-suffixes nil)
         (let ((resume (and transient--stack
                            (not (memq transient--exitp '(replace suspend))))))
+          ;; (message "======= %s %s" resume (length transient--stack))
           (setq transient--exitp nil)
           (setq transient--helpp nil)
           (setq transient--editp nil)
           (run-hooks 'transient-exit-hook)
           (when resume
             (transient--stack-pop))))
-    (unless (memq this-command '(transient-update transient-quit-seq))
-      (transient--pop-keymap 'transient--redisplay-map))
-    (setq transient--redisplay-map (transient--make-redisplay-map))
-    (transient--push-keymap 'transient--redisplay-map)
+    ;; (message "++++ %s %s" this-command (oref transient--prefix command))
     (unless (eq this-command (oref transient--prefix command))
+      ;; (unless (memq this-command '(transient-update transient-quit-seq))
+      ;;   (transient--pop-keymap 'transient--redisplay-map))
+      (transient--pop-keymap 'transient--redisplay-map)
+      (setq transient--redisplay-map (transient--make-redisplay-map))
+      (transient--push-keymap 'transient--redisplay-map)
       (transient--redisplay))))
 
 (defun transient--stack-push ()
